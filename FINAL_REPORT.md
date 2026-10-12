@@ -68,3 +68,40 @@
 1. **Deploy to Render (Optional)**: Follow [`DEPLOY.md`](DEPLOY.md) using the included `render.yaml` blueprint.
 2. **Run Smoke Test against Live URL**: Once deployed, run `./scripts/smoke_test.sh <LIVE_URL>` to verify production configuration.
 3. **Provision First Production Admin**: Log into Render Shell and execute `python -m app.cli create-admin`.
+
+---
+
+## 5. Addendum — BACKLOG B003 (Explicit Theme Toggle, 2026-10-13)
+
+After the M6 milestone was reported complete, the project owner approved shipping BACKLOG item
+**B003** as an out-of-band, low-risk user-experience addition. The original SCOPE / SPEC
+files were intentionally left untouched.
+
+**What changed**
+
+| File | Change |
+|---|---|
+| `app/utils.py` | New `get_theme(request)` helper + `THEME_COOKIE_NAME` constant. |
+| `app/routes/theme.py` *(new)* | `GET /theme?set={light,dark,system}&next=...` — sets / clears the `depthub_theme` cookie and 303-redirects. |
+| `app/main.py` | Mounts `theme_router`. |
+| `app/templates/base.html` | Renders `data-theme="light|dark"` on `<html>` from the cookie; adds a 3-button Light/Dark/System segmented control in the header (plain `<a>` links — no JavaScript required). |
+| `tests/test_theme.py` *(new, 14 tests)* | Covers cookie set/clear, validation, open-redirect protection, server-rendered `data-theme`, active-button `aria-current`, cookie attributes. |
+| `tests/test_e2e.py` | Added toggle assertions to `test_public_visitor_flow_and_zero_csp_errors` and `test_javascript_disabled_flow` to prove the toggle works with JS off and adds no CSP violations. |
+| `BACKLOG.md` | B003 marked shipped. |
+
+**Design notes**
+
+- **No new JavaScript, no new dependencies.** Toggle is plain `<a>` links → trivial no-JS support.
+- **Cookie-based persistence** (`depthub_theme`) so the server can render the correct `data-theme`
+  on `<html>` *before* first paint — no flash of unstyled theme (FOUC-free) without inline scripts,
+  which the strict CSP disallows.
+- **No CSRF risk** — route is GET-only; CSRF middleware (`app/security.py:21`) only guards POST/PUT/PATCH/DELETE.
+- **Open-redirect protection** — `next` is rejected if it doesn't start with a single `/`.
+- **No new CSP rules** — `script-src 'self'` is unchanged; security header tests still pass.
+
+**Verification (post-change)**
+
+- Lint / format: `ruff check .` and `ruff format --check .` clean.
+- Test suite: **67 passed, 1 skipped** (53 prior + 14 new), 0 failed.
+- Live smoke test on port 8002: see `scripts/smoke_theme.py` output. All six scenarios passed.
+- BACKLOG B003 removed from the open list.
