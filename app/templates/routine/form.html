@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit Routine Slot' if slot else 'New Routine Slot' }} - DeptHub Admin{% endblock %}
+
+{% block content %}
+<article style="max-width: 720px; margin: 1rem auto; padding: 1.5rem;">
+    <header style="margin-bottom: 1.5rem;">
+        <h2>{{ 'Edit Routine Slot' if slot else 'Add Routine Slot' }}</h2>
+        <p style="color: var(--pico-muted-color);">Configure weekly class times without room or instructor overlap.</p>
+    </header>
+
+    {% if error %}
+        <div class="alert-error" role="alert" id="routine-error">
+            <strong>Scheduling Conflict:</strong> {{ error }}
+        </div>
+    {% endif %}
+
+    <form method="post" action="{{ '/admin/routine/' ~ slot.id ~ '/edit' if slot else '/admin/routine/new' }}" id="routine-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+            <label for="batch_id">
+                Batch *
+                <select id="batch_id" name="batch_id" required>
+                    {% for b in batches %}
+                        <option value="{{ b.id }}" {% if (slot and slot.batch_id == b.id) or (form_data and form_data.batch_id == b.id) or (selected_batch_id == b.id) %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label for="section_id">
+                Section (Optional)
+                <select id="section_id" name="section_id">
+                    <option value="">All Sections</option>
+                    {% for s in sections %}
+                        <option value="{{ s.id }}" {% if (slot and slot.section_id == s.id) or (form_data and form_data.section_id == s.id) %}selected{% endif %}>Section {{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+            <label for="weekday">
+                Day of Week *
+                <select id="weekday" name="weekday" required>
+                    {% for day in weekdays %}
+                        <option value="{{ day }}" {% if (slot and slot.weekday == day) or (form_data and form_data.weekday == day) %}selected{% endif %}>{{ day }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label for="start_time">
+                Start Time *
+                <input type="time" id="start_time" name="start_time" value="{{ slot.start_time.strftime('%H:%M') if slot else (form_data.start_time if form_data else '10:00') }}" required>
+            </label>
+
+            <label for="end_time">
+                End Time *
+                <input type="time" id="end_time" name="end_time" value="{{ slot.end_time.strftime('%H:%M') if slot else (form_data.end_time if form_data else '11:30') }}" required>
+            </label>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+            <label for="course_code">
+                Course Code *
+                <input type="text" id="course_code" name="course_code" placeholder="e.g. CSE-301" value="{{ slot.course_code if slot else (form_data.course_code if form_data else '') }}" required>
+            </label>
+
+            <label for="course_title">
+                Course Title *
+                <input type="text" id="course_title" name="course_title" placeholder="e.g. Database Management Systems" value="{{ slot.course_title if slot else (form_data.course_title if form_data else '') }}" required>
+            </label>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+            <label for="teacher">
+                Teacher *
+                <input type="text" id="teacher" name="teacher" placeholder="e.g. Dr. A. Rahman" value="{{ slot.teacher if slot else (form_data.teacher if form_data else '') }}" required>
+            </label>
+
+            <label for="room">
+                Room / Lab *
+                <input type="text" id="room" name="room" placeholder="e.g. Room 402 or Lab 3" value="{{ slot.room if slot else (form_data.room if form_data else '') }}" required>
+            </label>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; gap: 1rem; margin-top: 1.5rem;">
+            <a href="/admin/routine" role="button" class="outline contrast" id="btn-cancel">Cancel</a>
+            <button type="submit" id="btn-submit">{{ 'Save Changes' if slot else 'Add Slot' }}</button>
+        </div>
+    </form>
+</article>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Batches & Sections - DeptHub Admin{% endblock %}
+
+{% block content %}
+<section>
+    <header style="margin-bottom: 1.5rem;">
+        <h1 style="font-size: 1.75rem; margin-bottom: 0.25rem;">Batches & Sections</h1>
+        <p style="color: var(--pico-muted-color);">Configure academic sessions and class sections for routines and exams.</p>
+    </header>
+
+    {% if error %}
+        <div class="alert-error" role="alert" id="batch-error">{{ error }}</div>
+    {% endif %}
+
+    <!-- Create Batch Form -->
+    <article style="margin-bottom: 2rem; padding: 1.25rem;">
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.75rem;">+ Add New Batch</h3>
+        <form method="post" action="/admin/batches/new" style="margin: 0; display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div style="flex: 1; min-width: 240px;">
+                <label for="batch_name" style="font-size: 0.85rem; font-weight: 600;">Batch Name (e.g. "22-23 Session")</label>
+                <input type="text" id="batch_name" name="name" placeholder="22-23 Session" required>
+            </div>
+            <button type="submit" id="btn-create-batch" style="margin-bottom: 0;">Add Batch</button>
+        </form>
+    </article>
+
+    <!-- Batches List -->
+    {% if batches %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+            {% for batch in batches %}
+                <article style="margin: 0; padding: 1.25rem; border: 1px solid var(--pico-muted-border-color);" id="batch-card-{{ batch.id }}">
+                    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--pico-muted-border-color); padding-bottom: 0.5rem;">
+                        <h3 style="margin: 0; font-size: 1.25rem;">{{ batch.name }}</h3>
+                        <form method="post" action="/admin/batches/{{ batch.id }}/delete" style="margin: 0;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="outline contrast" style="padding: 0.2rem 0.5rem; font-size: 0.8rem; margin: 0;" id="delete-batch-{{ batch.id }}" onclick="return confirm('Delete this batch?');">Delete</button>
+                        </form>
+                    </header>
+
+                    <!-- Sections inside Batch -->
+                    <div style="margin-bottom: 1rem;">
+                        <strong style="font-size: 0.85rem; display: block; margin-bottom: 0.5rem; color: var(--pico-muted-color);">Sections:</strong>
+                        {% if batch.sections %}
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+                                {% for sec in batch.sections %}
+                                    <span style="display: inline-flex; align-items: center; gap: 0.25rem; background: var(--pico-card-background-color); border: 1px solid var(--pico-muted-border-color); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">
+                                        Section {{ sec.name }}
+                                        <form method="post" action="/admin/sections/{{ sec.id }}/delete" style="display: inline; margin: 0;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                            <button type="submit" style="background: none; border: none; padding: 0; color: #e02424; cursor: pointer; font-size: 0.85rem;" title="Remove section">&times;</button>
+                                        </form>
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p style="font-size: 0.85rem; color: var(--pico-muted-color); font-style: italic; margin-bottom: 0.5rem;">No sections (slots will apply to entire batch).</p>
+                        {% endif %}
+
+                        <!-- Add Section to Batch -->
+                        <form method="post" action="/admin/batches/{{ batch.id }}/sections/new" style="margin: 0; display: flex; gap: 0.5rem; align-items: center;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="text" name="name" placeholder="Section name (e.g. A)" required style="margin: 0; padding: 0.3rem 0.5rem; font-size: 0.85rem; max-width: 160px;">
+                            <button type="submit" class="outline" style="margin: 0; padding: 0.3rem 0.6rem; font-size: 0.85rem;">+ Add Section</button>
+                        </form>
+                    </div>
+
+                    <footer style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--pico-muted-border-color); display: flex; justify-content: space-between; font-size: 0.85rem;">
+                        <a href="/routine?batch_id={{ batch.id }}">View Routine &rarr;</a>
+                        <a href="/feeds/batch/{{ batch.id }}.ics" class="secondary" title="Calendar Feed">.ics Feed</a>
+                    </footer>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <article style="text-align: center; padding: 2.5rem 1rem;">
+            <h3>No batches defined</h3>
+            <p style="color: var(--pico-muted-color);">Add your first academic batch using the form above.</p>
+        </article>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Weekly Class Routine - DeptHub{% endblock %}
+
+{% block content %}
+<section>
+    <header style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="font-size: 1.75rem; margin-bottom: 0.25rem;">Weekly Class Routine</h1>
+            <p style="color: var(--pico-muted-color); margin: 0;">Timetable per batch and section.</p>
+        </div>
+        {% if selected_batch %}
+            <a href="/feeds/batch/{{ selected_batch.id }}.ics" role="button" class="outline secondary" style="font-size: 0.85rem;" id="routine-ics-link">
+                📅 Add to Google / Apple Calendar (.ics)
+            </a>
+        {% endif %}
+    </header>
+
+    <!-- Batch and Section Selection Form -->
+    <form method="get" action="/routine" style="margin-bottom: 2rem; background: var(--pico-card-background-color); padding: 1rem 1.25rem; border-radius: var(--pico-border-radius); border: 1px solid var(--pico-muted-border-color);">
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+            <div style="flex: 1; min-width: 200px;">
+                <label for="batch_id" style="font-size: 0.85rem; font-weight: 600;">Select Batch</label>
+                <select id="batch_id" name="batch_id" onchange="this.form.submit()">
+                    {% for b in batches %}
+                        <option value="{{ b.id }}" {% if selected_batch_id == b.id %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {% if sections %}
+                <div style="flex: 1; min-width: 160px;">
+                    <label for="section_id" style="font-size: 0.85rem; font-weight: 600;">Section</label>
+                    <select id="section_id" name="section_id" onchange="this.form.submit()">
+                        <option value="">All Sections</option>
+                        {% for s in sections %}
+                            <option value="{{ s.id }}" {% if selected_section_id == s.id %}selected{% endif %}>Section {{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+
+            <noscript>
+                <button type="submit" style="margin-bottom: 0;">View Routine</button>
+            </noscript>
+        </div>
+    </form>
+
+    {% if selected_batch %}
+        <div class="weekly-routine-grid" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            {% for day in weekdays %}
+                {% set day_slots = grid_data[day] %}
+                <article style="margin: 0; padding: 1.25rem; border: 1px solid var(--pico-muted-border-color);" id="routine-day-{{ day.lower() }}">
+                    <header style="margin-bottom: 0.75rem; border-bottom: 1px solid var(--pico-muted-border-color); padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0; font-size: 1.2rem;">{{ day }}</h3>
+                        <span style="font-size: 0.85rem; color: var(--pico-muted-color);">{{ day_slots|length }} class{{ 'es' if day_slots|length != 1 else '' }}</span>
+                    </header>
+
+                    {% if day_slots %}
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+                            {% for slot in day_slots %}
+                                <div style="background: var(--pico-card-background-color); border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); padding: 1rem; border-left: 4px solid var(--pico-primary-background);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                        <strong style="color: var(--pico-primary); font-size: 0.9rem;">
+                                            {{ slot.start_time.strftime('%I:%M %p').lstrip('0') }} - {{ slot.end_time.strftime('%I:%M %p').lstrip('0') }}
+                                        </strong>
+                                        {% if slot.section %}
+                                            <span class="badge" style="font-size: 0.75rem;">Sec {{ slot.section.name }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <h4 style="margin: 0 0 0.25rem 0; font-size: 1.05rem;">{{ slot.course_code }}</h4>
+                                    <p style="margin: 0 0 0.5rem 0; font-size: 0.85rem; color: var(--pico-color);">{{ slot.course_title }}</p>
+                                    <div style="font-size: 0.8rem; color: var(--pico-muted-color); display: flex; justify-content: space-between;">
+                                        <span>👨‍🏫 {{ slot.teacher }}</span>
+                                        <span>📍 {{ slot.room }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p style="margin: 0; color: var(--pico-muted-color); font-style: italic; font-size: 0.9rem;">No classes scheduled.</p>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <article style="text-align: center; padding: 3rem 1rem;">
+            <h3>No batches available</h3>
+            <p style="color: var(--pico-muted-color);">An administrator needs to create a batch first.</p>
+        </article>
+    {% endif %}
+</section>
+{% endblock %}
