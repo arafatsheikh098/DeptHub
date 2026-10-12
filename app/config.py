@@ -29,6 +29,19 @@ class Settings(BaseSettings):
         ):
             msg = "Production refuses to start with default or insecure SECRET_KEY"
             raise ValueError(msg)
+
+        # Normalize Render/Heroku postgres:// URLs to postgresql+psycopg://
+        if self.DATABASE_URL.startswith("postgres://"):
+            self.DATABASE_URL = self.DATABASE_URL.replace(
+                "postgres://", "postgresql+psycopg://", 1
+            )
+        elif self.DATABASE_URL.startswith(
+            "postgresql://"
+        ) and not self.DATABASE_URL.startswith("postgresql+psycopg://"):
+            self.DATABASE_URL = self.DATABASE_URL.replace(
+                "postgresql://", "postgresql+psycopg://", 1
+            )
+
         return self
 
 
