@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DeptHub - Department Notice Board & Routine{% endblock %}</title>
+    <meta name="description" content="{% block description %}Notices, class routine, and exam schedule for the university department.{% endblock %}">
+    <link rel="stylesheet" href="/static/css/pico.min.css">
+    <style>
+        /* Mobile-friendly and custom enhancements */
+        :root {
+            --pico-font-size: 100%;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+        main {
+            flex: 1;
+            padding-top: 1rem;
+            padding-bottom: 2rem;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        nav {
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        nav ul {
+            flex-wrap: wrap;
+            row-gap: 0.25rem;
+        }
+        .brand {
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background-color: var(--pico-muted-border-color);
+            color: var(--pico-color);
+        }
+        .badge-pinned {
+            background-color: #e65100;
+            color: #ffffff;
+        }
+        .badge-category {
+            background-color: var(--pico-primary-background);
+            color: var(--pico-primary-inverse);
+        }
+        .alert-error {
+            background-color: #fde8e8;
+            border: 1px solid #f98080;
+            color: #9b1c1c;
+            padding: 0.75rem 1rem;
+            border-radius: var(--pico-border-radius);
+            margin-bottom: 1rem;
+        }
+        .alert-success {
+            background-color: #def7ec;
+            border: 1px solid #31c48d;
+            color: #03543f;
+            padding: 0.75rem 1rem;
+            border-radius: var(--pico-border-radius);
+            margin-bottom: 1rem;
+        }
+        footer {
+            margin-top: auto;
+            border-top: 1px solid var(--pico-muted-border-color);
+            padding: 1.5rem 0;
+            font-size: 0.875rem;
+            color: var(--pico-muted-color);
+            text-align: center;
+        }
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header class="container">
+        <nav aria-label="Main Navigation">
+            <ul>
+                <li><a href="/" class="brand" id="brand-link"><strong>DeptHub</strong></a></li>
+            </ul>
+            <ul>
+                <li><a href="/" id="nav-notices">Notices</a></li>
+                <li><a href="/routine" id="nav-routine">Routine</a></li>
+                <li><a href="/today" id="nav-today">Today</a></li>
+                <li><a href="/exams" id="nav-exams">Exams</a></li>
+                {% if is_admin %}
+                    <li><a href="/admin/notices" id="nav-admin-notices">Admin</a></li>
+                    <li><a href="/admin/audit" id="nav-admin-audit">Audit</a></li>
+                    <li>
+                        <form action="/auth/logout" method="post" style="display:inline; margin:0; padding:0;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token or '' }}">
+                            <button type="submit" class="outline contrast" style="padding:0.25rem 0.6rem; margin:0;" id="logout-btn">Logout</button>
+                        </form>
+                    </li>
+                {% else %}
+                    <li><a href="/auth/login" role="button" class="outline" style="padding:0.25rem 0.6rem;" id="nav-login">Admin Login</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container" id="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="container">
+        <p>&copy; 2026 DeptHub &bull; University Department Information System</p>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

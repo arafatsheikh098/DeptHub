@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: depthub
+      POSTGRES_PASSWORD: depthub_password
+      POSTGRES_DB: depthub
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U depthub -d depthub"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      ENV: production
+      SECRET_KEY: production-secure-secret-key-replace-in-real-deployment-32bytes
+      DATABASE_URL: postgresql+psycopg://depthub:depthub_password@postgres:5432/depthub
+      PUBLIC_BASE_URL: http://localhost:8000
+      TIMEZONE: Asia/Dhaka
+      FORWARDED_ALLOW_IPS: "*"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  postgres_data:
