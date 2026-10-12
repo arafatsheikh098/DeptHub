@@ -1,6 +1,6 @@
 # PLAN: DeptHub Implementation Plan
 
-## M1: Foundation
+## M1: Foundation [COMPLETED]
 ### Scope & Deliverables
 - Project configuration (`app/config.py`) using `pydantic-settings`, reading from environment with documented `.env.example`. Refuses default secret in production.
 - Database session dependency and engine setup (`app/database.py`) supporting both SQLite and PostgreSQL.
@@ -43,7 +43,7 @@
 
 ---
 
-## M2: Admin auth and security baseline
+## M2: Admin auth and security baseline [COMPLETED]
 ### Scope & Deliverables
 - Password hashing with argon2-cffi (`app/auth.py`).
 - Session management using Starlette SessionMiddleware with signed cookies (HttpOnly, SameSite=Lax, Secure in production).
@@ -68,7 +68,7 @@
 
 ---
 
-## M3: Notices
+## M3: Notices [COMPLETED]
 ### Scope & Deliverables
 - Admin CRUD for Notices: title (max 150), plain-text body (line breaks preserved), category (General, Academic, Exam, Event, Scholarship, Job), pinned, optional external link (http/https only), optional batch, draft/published, published_at.
 - Public notice board at `/`: pinned notices first, then newest published_at; search (title + body); category and batch filters; 10 items per pagination page; works without JS, enhanced with HTMX.
@@ -87,7 +87,7 @@
 
 ---
 
-## M4: Batches, routine, exams
+## M4: Batches, routine, exams [COMPLETED]
 ### Scope & Deliverables
 - Admin CRUD for Batches and Sections (`/admin/batches`).
 - Admin CRUD for Routine Slots (`/admin/routine`) with conflict validations:
