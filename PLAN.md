@@ -132,7 +132,7 @@
 
 ---
 
-## M6: Audit log, hardening, seed, mobile UI, end-to-end tests
+## M6: Audit log, hardening, seed, mobile UI, end-to-end tests [COMPLETED]
 ### Scope & Deliverables
 - Audit log recording on all admin mutations (actor, action, entity, id, time, summary).
 - Admin paginated audit log viewer (`/admin/audit`).
