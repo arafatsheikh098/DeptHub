@@ -13,7 +13,7 @@ from app.models.batch import Batch
 from app.models.notice import Notice, NoticeCategory, NoticeStatus
 from app.models.user import User
 from app.security import get_csrf_token, verify_csrf
-from app.utils import format_dt, is_safe_external_url
+from app.utils import embed_url, format_dt, is_safe_external_url
 
 router = APIRouter(tags=["Notices"])
 templates = Jinja2Templates(directory="app/templates")
@@ -146,6 +146,7 @@ def get_notice_detail(
             "csrf_token": get_csrf_token(request),
             "notice": notice,
             "is_admin": is_admin,
+            "embed_url": embed_url(notice.external_link) if notice else None,
         },
     )
 
