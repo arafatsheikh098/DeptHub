@@ -15,6 +15,7 @@ from app.models.user import User
 from app.routes.auth import router as auth_router
 from app.routes.batches import router as batches_router
 from app.routes.exams import router as exams_router
+from app.routes.feeds import router as feeds_router
 from app.routes.notices import router as notices_router
 from app.routes.routine import router as routine_router
 
@@ -77,6 +78,7 @@ def create_app() -> FastAPI:
     app.include_router(batches_router)
     app.include_router(routine_router)
     app.include_router(exams_router)
+    app.include_router(feeds_router)
 
     @app.get("/health", tags=["Operations"])
     def health_check(session: Session = Depends(get_session)):

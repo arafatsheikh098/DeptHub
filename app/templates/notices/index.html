@@ -4,9 +4,16 @@
 
 {% block content %}
 <section style="margin-bottom: 2rem;">
-    <header style="margin-bottom: 1.5rem;">
-        <h1 style="font-size: 1.75rem; margin-bottom: 0.25rem;">Department Notice Board</h1>
-        <p style="color: var(--pico-muted-color); margin-bottom: 1rem;">Official announcements, academic schedules, and department events.</p>
+    <header style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem;">
+        <div>
+            <h1 style="font-size: 1.75rem; margin-bottom: 0.25rem;">Department Notice Board</h1>
+            <p style="color: var(--pico-muted-color); margin-bottom: 0;">Official announcements, academic schedules, and department events.</p>
+        </div>
+        <div>
+            <a href="/feeds/notices.atom" class="secondary" style="font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Subscribe via Atom / RSS">
+                📡 <strong>Atom Feed</strong>
+            </a>
+        </div>
     </header>
 
     <!-- Search and Filters Form: Works with JavaScript disabled -->
