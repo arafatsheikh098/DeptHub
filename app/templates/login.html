@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Login - DeptHub{% endblock %}
+
+{% block content %}
+<article style="max-width: 480px; margin: 2rem auto;">
+    <header>
+        <h2 style="margin-bottom: 0.25rem;">Admin Login</h2>
+        <p style="color: var(--pico-muted-color); font-size: 0.9rem;">Sign in to manage department notices, routine, and exams.</p>
+    </header>
+
+    {% if error %}
+        <div class="alert-error" role="alert" id="login-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/auth/login" id="login-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        {% if next_url %}
+            <input type="hidden" name="next" value="{{ next_url }}">
+        {% endif %}
+
+        <label for="email">
+            Email Address
+            <input type="email" id="email" name="email" value="{{ email or '' }}" placeholder="admin@dept.university.edu" required autocomplete="email">
+        </label>
+
+        <label for="password">
+            Password
+            <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+        </label>
+
+        <button type="submit" id="login-submit-btn" style="margin-top: 1rem; width: 100%;">Sign In</button>
+    </form>
+</article>
+{% endblock %}
