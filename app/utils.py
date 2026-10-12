@@ -13,6 +13,26 @@ WEEKDAYS = [
     "Sunday",
 ]
 
+WEEKDAY_CODES = {
+    "Monday": "MO",
+    "Tuesday": "TU",
+    "Wednesday": "WE",
+    "Thursday": "TH",
+    "Friday": "FR",
+    "Saturday": "SA",
+    "Sunday": "SU",
+}
+
+WEEKDAY_NUMBERS = {
+    "Monday": 0,
+    "Tuesday": 1,
+    "Wednesday": 2,
+    "Thursday": 3,
+    "Friday": 4,
+    "Saturday": 5,
+    "Sunday": 6,
+}
+
 
 def format_dt(dt: datetime | None, fmt: str = "%b %d, %Y %I:%M %p") -> str:
     """Format UTC datetime into configured TIMEZONE."""

@@ -9,6 +9,11 @@
             <h1 style="font-size: 1.75rem; margin-bottom: 0.25rem;">Examination Schedule</h1>
             <p style="color: var(--pico-muted-color); margin: 0;">Class Tests, Midterms, Lab exams, and Semester Finals.</p>
         </div>
+        {% if selected_batch_id %}
+            <a href="/feeds/batch/{{ selected_batch_id }}.ics" role="button" class="outline secondary" style="font-size: 0.85rem;" id="exams-ics-link">
+                📅 Subscribe to Exam Calendar (.ics)
+            </a>
+        {% endif %}
     </header>
 
     <!-- Filters: Batch and Show Past Toggle -->
