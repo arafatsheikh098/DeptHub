@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}{{ notice.title }} - DeptHub{% endblock %}
+
+{% block content %}
+<article style="padding: 1.5rem; max-width: 800px; margin: 1rem auto;">
+    <header style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--pico-muted-border-color); padding-bottom: 1rem;">
+        <div style="margin-bottom: 0.75rem;">
+            {% if notice.is_pinned %}
+                <span class="badge badge-pinned" id="detail-pinned">📌 Pinned</span>
+            {% endif %}
+            <span class="badge badge-category" id="detail-category">{{ notice.category }}</span>
+            {% if notice.batch %}
+                <span class="badge" id="detail-batch">{{ notice.batch.name }}</span>
+            {% else %}
+                <span class="badge" id="detail-batch">All Batches</span>
+            {% endif %}
+            {% if notice.status == 'draft' %}
+                <span class="badge" style="background-color: #6b7280; color: white;">Draft</span>
+            {% endif %}
+        </div>
+
+        <h1 style="font-size: 1.75rem; margin-bottom: 0.5rem;" id="detail-title">{{ notice.title }}</h1>
+
+        <time datetime="{{ notice.published_at.isoformat() if notice.published_at else '' }}" style="font-size: 0.9rem; color: var(--pico-muted-color);">
+            Published: {{ format_dt(notice.published_at) if notice.published_at else 'Draft (Unpublished)' }}
+        </time>
+    </header>
+
+    <div style="margin-bottom: 2rem;">
+        <!-- Pre block preserves whitespace and newlines, while Jinja auto-escapes HTML -->
+        <div style="white-space: pre-wrap; font-family: inherit; font-size: 1.05rem; line-height: 1.6;" id="detail-body">{{ notice.body }}</div>
+    </div>
+
+    {% if notice.external_link %}
+        <div style="margin-bottom: 2rem; background: var(--pico-card-background-color); padding: 1rem; border-radius: var(--pico-border-radius); border-left: 4px solid var(--pico-primary-background);">
+            <strong style="display: block; margin-bottom: 0.25rem;">Reference Link:</strong>
+            <a href="{{ notice.external_link }}" target="_blank" rel="noopener noreferrer" id="detail-external-link">
+                {{ notice.external_link }} &#8599;
+            </a>
+        </div>
+    {% endif %}
+
+    <footer style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--pico-muted-border-color); padding-top: 1rem;">
+        <a href="/" role="button" class="outline" id="detail-back-btn">&larr; Back to Notices</a>
+
+        {% if is_admin %}
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="/admin/notices/{{ notice.id }}/edit" role="button" class="outline" id="detail-admin-edit-btn">Edit Notice</a>
+            </div>
+        {% endif %}
+    </footer>
+</article>
+{% endblock %}

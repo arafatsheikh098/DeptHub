@@ -1,0 +1,78 @@
+<div id="notices-container">
+    {% if notices %}
+        <div class="notices-list">
+            {% for notice in notices %}
+                <article class="notice-card" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+                    <header style="margin-bottom: 0.75rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
+                        <div>
+                            {% if notice.is_pinned %}
+                                <span class="badge badge-pinned" id="badge-pinned-{{ notice.id }}">📌 Pinned</span>
+                            {% endif %}
+                            <span class="badge badge-category">{{ notice.category }}</span>
+                            {% if notice.batch %}
+                                <span class="badge">{{ notice.batch.name }}</span>
+                            {% else %}
+                                <span class="badge">All Batches</span>
+                            {% endif %}
+                            {% if notice.status == 'draft' %}
+                                <span class="badge" style="background-color: #6b7280; color: white;">Draft</span>
+                            {% endif %}
+                        </div>
+                        <time datetime="{{ notice.published_at.isoformat() if notice.published_at else '' }}" style="font-size: 0.85rem; color: var(--pico-muted-color);">
+                            {{ format_dt(notice.published_at) if notice.published_at else 'Unpublished' }}
+                        </time>
+                    </header>
+
+                    <h3 style="margin-bottom: 0.5rem; font-size: 1.25rem;">
+                        <a href="/notices/{{ notice.id }}" style="text-decoration: none;" id="notice-title-{{ notice.id }}">
+                            {{ notice.title }}
+                        </a>
+                    </h3>
+
+                    <p style="white-space: pre-wrap; margin-bottom: 0.75rem; color: var(--pico-color);">{{ notice.body[:250] }}{% if notice.body|length > 250 %}...{% endif %}</p>
+
+                    <footer style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--pico-muted-border-color); display: flex; justify-content: space-between; align-items: center;">
+                        <a href="/notices/{{ notice.id }}" style="font-size: 0.9rem;" id="notice-readmore-{{ notice.id }}">Read full notice &rarr;</a>
+                        {% if notice.external_link %}
+                            <a href="{{ notice.external_link }}" target="_blank" rel="noopener noreferrer" style="font-size: 0.85rem;" class="secondary">
+                                External Link &#8599;
+                            </a>
+                        {% endif %}
+                    </footer>
+                </article>
+            {% endfor %}
+        </div>
+
+        {% if total_pages > 1 %}
+            <nav aria-label="Pagination" style="margin-top: 2rem; display: flex; justify-content: center; align-items: center; gap: 1rem;">
+                <ul style="display: flex; gap: 0.5rem; list-style: none; padding: 0;">
+                    {% if current_page > 1 %}
+                        <li>
+                            <a href="?page={{ current_page - 1 }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_batch %}&batch_id={{ selected_batch }}{% endif %}"
+                               role="button" class="outline" id="prev-page-link">&larr; Previous</a>
+                        </li>
+                    {% endif %}
+
+                    <li>
+                        <span style="display: inline-block; padding: 0.4rem 0.8rem; font-size: 0.9rem;">
+                            Page {{ current_page }} of {{ total_pages }}
+                        </span>
+                    </li>
+
+                    {% if current_page < total_pages %}
+                        <li>
+                            <a href="?page={{ current_page + 1 }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_batch %}&batch_id={{ selected_batch }}{% endif %}"
+                               role="button" class="outline" id="next-page-link">Next &rarr;</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <article style="text-align: center; padding: 2.5rem 1rem;" id="empty-state">
+            <h4>No notices found</h4>
+            <p style="color: var(--pico-muted-color);">Try adjusting your search query or selecting a different category or batch.</p>
+            <a href="/" role="button" class="outline" id="reset-filters-btn">Clear Filters</a>
+        </article>
+    {% endif %}
+</div>

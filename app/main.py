@@ -13,6 +13,7 @@ from app.config import settings
 from app.database import engine, get_session, init_db
 from app.models.user import User
 from app.routes.auth import router as auth_router
+from app.routes.notices import router as notices_router
 
 
 @asynccontextmanager
@@ -69,6 +70,7 @@ def create_app() -> FastAPI:
 
     # Include routes
     app.include_router(auth_router)
+    app.include_router(notices_router)
 
     @app.get("/health", tags=["Operations"])
     def health_check(session: Session = Depends(get_session)):

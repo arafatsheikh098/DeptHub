@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Notices - DeptHub Admin{% endblock %}
+
+{% block content %}
+<section>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="font-size: 1.75rem; margin-bottom: 0.25rem;">Manage Notices</h1>
+            <p style="color: var(--pico-muted-color); margin: 0;">Create, edit, or remove announcements.</p>
+        </div>
+        <a href="/admin/notices/new" role="button" id="btn-create-notice">+ Post New Notice</a>
+    </div>
+
+    {% if notices %}
+        <div class="table-responsive">
+            <table role="grid">
+                <thead>
+                    <tr>
+                        <th scope="col">Status</th>
+                        <th scope="col">Title</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Batch</th>
+                        <th scope="col">Published At</th>
+                        <th scope="col" style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for notice in notices %}
+                        <tr>
+                            <td>
+                                {% if notice.is_pinned %}
+                                    <span class="badge badge-pinned">📌 Pinned</span>
+                                {% endif %}
+                                {% if notice.status == 'draft' %}
+                                    <span class="badge" style="background-color: #6b7280; color: white;">Draft</span>
+                                {% else %}
+                                    <span class="badge" style="background-color: #057a55; color: white;">Published</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong><a href="/notices/{{ notice.id }}">{{ notice.title }}</a></strong>
+                            </td>
+                            <td><span class="badge">{{ notice.category }}</span></td>
+                            <td>{{ notice.batch.name if notice.batch else 'All' }}</td>
+                            <td>{{ format_dt(notice.published_at) if notice.published_at else '-' }}</td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                <a href="/admin/notices/{{ notice.id }}/edit" role="button" class="outline" style="padding: 0.25rem 0.5rem; margin-right: 0.25rem;" id="edit-notice-{{ notice.id }}">Edit</a>
+                                <form method="post" action="/admin/notices/{{ notice.id }}/delete" style="display: inline; margin: 0; padding: 0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <button type="submit" class="outline contrast" style="padding: 0.25rem 0.5rem; margin: 0;" id="delete-notice-{{ notice.id }}" onclick="return confirm('Delete this notice?');">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <article style="text-align: center; padding: 3rem 1rem;">
+            <h3>No notices available</h3>
+            <p style="color: var(--pico-muted-color);">Get started by posting your first department notice.</p>
+            <a href="/admin/notices/new" role="button">+ Create First Notice</a>
+        </article>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Notice Board - DeptHub{% endblock %}
+
+{% block content %}
+<section style="margin-bottom: 2rem;">
+    <header style="margin-bottom: 1.5rem;">
+        <h1 style="font-size: 1.75rem; margin-bottom: 0.25rem;">Department Notice Board</h1>
+        <p style="color: var(--pico-muted-color); margin-bottom: 1rem;">Official announcements, academic schedules, and department events.</p>
+    </header>
+
+    <!-- Search and Filters Form: Works with JavaScript disabled -->
+    <form method="get" action="/" id="filter-form" style="margin-bottom: 1.5rem; background: var(--pico-card-background-color); padding: 1.25rem; border-radius: var(--pico-border-radius); border: 1px solid var(--pico-muted-border-color);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+            <div>
+                <label for="search-input" style="font-size: 0.85rem; font-weight: 600;">Search Notices</label>
+                <input type="search" id="search-input" name="q" value="{{ query or '' }}" placeholder="Search by title or content...">
+            </div>
+
+            <div>
+                <label for="category-select" style="font-size: 0.85rem; font-weight: 600;">Category</label>
+                <select id="category-select" name="category">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="batch-select" style="font-size: 0.85rem; font-weight: 600;">Batch</label>
+                <select id="batch-select" name="batch_id">
+                    <option value="">All Batches</option>
+                    {% for b in batches %}
+                        <option value="{{ b.id }}" {% if selected_batch == b.id %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" id="filter-submit-btn" style="flex: 1;">Filter</button>
+                {% if query or selected_category or selected_batch %}
+                    <a href="/" role="button" class="outline contrast" id="filter-reset-link" style="padding: 0.5rem 0.75rem;">Reset</a>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+
+    <!-- Feed link -->
+    <div style="margin-bottom: 1rem; display: flex; justify-content: flex-end;">
+        <a href="/feeds/notices.atom" class="secondary" style="font-size: 0.85rem;" id="atom-feed-link">
+            📡 Subscribe to Atom Feed
+        </a>
+    </div>
+
+    <!-- Notices listing -->
+    {% include "notices/_list_partial.html" %}
+</section>
+{% endblock %}
