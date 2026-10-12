@@ -1,0 +1,1 @@
+"""DeptHub application package."""
