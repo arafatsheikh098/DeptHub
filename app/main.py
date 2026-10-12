@@ -12,6 +12,7 @@ from app.auth import get_password_hash
 from app.config import settings
 from app.database import engine, get_session, init_db
 from app.models.user import User
+from app.routes.admin import router as admin_router
 from app.routes.audit import router as audit_router
 from app.routes.auth import router as auth_router
 from app.routes.batches import router as batches_router
@@ -19,6 +20,7 @@ from app.routes.exams import router as exams_router
 from app.routes.feeds import router as feeds_router
 from app.routes.notices import router as notices_router
 from app.routes.routine import router as routine_router
+from app.routes.theme import router as theme_router
 from app.security import SecurityHeadersMiddleware
 
 templates = Jinja2Templates(directory="app/templates")
@@ -87,6 +89,8 @@ def create_app() -> FastAPI:
     app.include_router(exams_router)
     app.include_router(feeds_router)
     app.include_router(audit_router)
+    app.include_router(admin_router)
+    app.include_router(theme_router)
 
     @app.get("/health", tags=["Operations"])
     def health_check(session: Session = Depends(get_session)):

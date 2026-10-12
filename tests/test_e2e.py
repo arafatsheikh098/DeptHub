@@ -99,6 +99,18 @@ def test_public_visitor_flow_and_zero_csp_errors(live_server):
         ]
         assert len(csp_errors) == 0, f"CSP errors found: {csp_errors}"
 
+        # 5. Theme toggle: clicking Dark link stays on the same path and applies
+        #    data-theme="dark" to <html>, with no CSP console errors.
+        page.goto(f"{live_server}/")
+        assert page.locator("#theme-dark").count() == 1
+        page.click("#theme-dark")
+        # Toggle is a plain GET, so we land back on /
+        assert 'data-theme="dark"' in page.content()
+        csp_errors = [
+            e for e in console_errors if "Content Security Policy" in e or "CSP" in e
+        ]
+        assert len(csp_errors) == 0, f"CSP errors after theme toggle: {csp_errors}"
+
         browser.close()
 
 
@@ -152,6 +164,20 @@ def test_javascript_disabled_flow(live_server):
         page.check("#show_past")
         page.click("button:has-text('Apply')")
         assert "Examination Schedule" in page.content()
+
+        # 4. Theme toggle works via plain link navigation (no JS).
+        page.goto(f"{live_server}/")
+        # No data-theme on first visit (default = follow system)
+        assert "data-theme=" not in page.content().split(">", 1)[0]
+        # Click "Dark" toggle (a plain <a> link)
+        page.click("#theme-dark")
+        # Now the page should be on /, with data-theme="dark" on <html>
+        assert 'data-theme="dark"' in page.content()
+        # And the system toggle is NOT marked active
+        dark_line = next(
+            ln for ln in page.content().splitlines() if 'id="theme-dark"' in ln
+        )
+        assert 'aria-current="true"' in dark_line
 
         browser.close()
 

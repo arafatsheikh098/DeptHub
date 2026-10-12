@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+{% set _raw_theme = request.cookies.get('depthub_theme', '') %}
+{% set current_theme = _raw_theme if _raw_theme in ('light', 'dark') else none %}
+<html lang="en"{% if current_theme %} data-theme="{{ current_theme }}"{% endif %}>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -85,6 +87,33 @@
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
         }
+        .theme-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.15rem;
+            margin-left: 0.25rem;
+        }
+        .theme-toggle .theme-btn {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            min-width: 2rem;
+            text-align: center;
+            line-height: 1;
+            font-size: 1rem;
+            text-decoration: none;
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: 4px;
+            color: var(--pico-color);
+            background: transparent;
+        }
+        .theme-toggle .theme-btn:hover {
+            background: var(--pico-muted-border-color);
+        }
+        .theme-toggle .theme-btn.active {
+            background: var(--pico-primary-background);
+            color: var(--pico-primary-inverse);
+            border-color: var(--pico-primary-background);
+        }
     </style>
     <meta name="htmx-config" content='{"allowEval": false, "selfRequestsOnly": true}'>
     <link rel="alternate" type="application/atom+xml" title="DeptHub Notices Atom Feed" href="/feeds/notices.atom">
@@ -102,7 +131,7 @@
                 <li><a href="/today" id="nav-today">Today</a></li>
                 <li><a href="/exams" id="nav-exams">Exams</a></li>
                 {% if is_admin %}
-                    <li><a href="/admin/notices" id="nav-admin-notices">Admin</a></li>
+                    <li><a href="/admin" id="nav-admin">Admin</a></li>
                     <li><a href="/admin/audit" id="nav-admin-audit">Audit</a></li>
                     <li>
                         <form action="/auth/logout" method="post" style="display:inline; margin:0; padding:0;">
@@ -113,6 +142,12 @@
                 {% else %}
                     <li><a href="/auth/login" role="button" class="outline" style="padding:0.25rem 0.6rem;" id="nav-login">Admin Login</a></li>
                 {% endif %}
+                <li class="theme-toggle" role="group" aria-label="Color theme" id="theme-toggle">
+                    {% set active = current_theme if current_theme else 'system' %}
+                    <a href="/theme?set=light&amp;next={{ request.url.path | urlencode }}" id="theme-light" class="theme-btn{% if active == 'light' %} active{% endif %}"{% if active == 'light' %} aria-current="true"{% endif %} role="button" title="Light theme" aria-label="Light theme">☀</a>
+                    <a href="/theme?set=dark&amp;next={{ request.url.path | urlencode }}" id="theme-dark" class="theme-btn{% if active == 'dark' %} active{% endif %}"{% if active == 'dark' %} aria-current="true"{% endif %} role="button" title="Dark theme" aria-label="Dark theme">🌙</a>
+                    <a href="/theme?set=system&amp;next={{ request.url.path | urlencode }}" id="theme-system" class="theme-btn{% if active == 'system' %} active{% endif %}"{% if active == 'system' %} aria-current="true"{% endif %} role="button" title="Follow system theme" aria-label="System theme">◐</a>
+                </li>
             </ul>
         </nav>
     </header>
