@@ -245,6 +245,48 @@ def test_drafts_never_appear_publicly(client: TestClient, session: Session):
     assert "Top Secret Draft Notice" in resp_detail_admin.text
 
 
+def test_external_link_field_has_helpful_copy(client: TestClient, session: Session):
+    """The notice form's external link field must explain how previews work.
+
+    Admins should know that the link opens in a new tab and the host site
+    handles the preview, and they should be guided toward PDF-friendly URLs.
+    """
+    auth_client, _ = get_authenticated_client(client, session)
+
+    # 1. The new-notice form should include the help text.
+    resp = auth_client.get("/admin/notices/new")
+    assert resp.status_code == 200
+    body = resp.text
+    assert 'id="external_link"' in body
+    assert "drive.google.com" in body.lower(), "Help text should mention Drive"
+    assert "opens in a new tab" in body
+    assert "preview" in body.lower()
+    # Placeholder should give a useful example URL, not just example.com
+    assert "drive.google.com" in body or "notice.pdf" in body
+
+
+def test_external_link_validation_still_works(client: TestClient, session: Session):
+    """The improved copy must not weaken URL validation."""
+    auth_client, csrf_token = get_authenticated_client(client, session)
+    # Get a fresh form to ensure CSRF token matches this session
+    fresh = auth_client.get("/admin/notices/new")
+    fresh_token = re.search(r'name="csrf_token" value="([^"]+)"', fresh.text).group(1)
+    resp = auth_client.post(
+        "/admin/notices/new",
+        data={
+            "title": "Bad Link Test",
+            "body": "Testing bad link",
+            "category": "General",
+            "external_link": "javascript:alert(1)",
+            "status": "published",
+            "csrf_token": fresh_token,
+        },
+    )
+    # 400 with error message because javascript: is not http/https
+    assert resp.status_code == 400
+    assert "http://" in resp.text or "https://" in resp.text
+
+
 def test_admin_notice_crud_workflow(client: TestClient, session: Session):
     auth_client, csrf_token = get_authenticated_client(client, session)
 

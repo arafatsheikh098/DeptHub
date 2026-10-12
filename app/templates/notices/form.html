@@ -44,7 +44,14 @@
 
         <label for="external_link">
             External Link (Optional, http:// or https:// only)
-            <input type="url" id="external_link" name="external_link" value="{{ notice.external_link if notice and notice.external_link else (form_data.external_link if form_data else '') }}" placeholder="https://example.com/more-info">
+            <input type="url" id="external_link" name="external_link" value="{{ notice.external_link if notice and notice.external_link else (form_data.external_link if form_data else '') }}" placeholder="https://drive.google.com/file/d/... or https://example.com/notice.pdf">
+            <small style="display:block; margin-top: 0.4rem; color: var(--pico-muted-color); font-size: 0.8rem;">
+                Paste a public link to a PDF, image, or webpage. The link opens in a new tab
+                &mdash; the destination site (Google Drive, Dropbox, OneDrive, etc.) handles
+                the preview. For best PDF previews, use
+                <code>drive.google.com/.../preview</code> or a direct <code>.pdf</code> URL.
+                Inline previews are not embedded in this site.
+            </small>
         </label>
 
         <label for="body">
