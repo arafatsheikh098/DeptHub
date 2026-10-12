@@ -119,7 +119,7 @@
 
 ---
 
-## M5: Feeds
+## M5: Feeds [COMPLETED]
 ### Scope & Deliverables
 - `/feeds/notices.atom`: Up to 30 latest published notices, absolute URLs with `PUBLIC_BASE_URL`, draft exclusion.
 - `/feeds/batch/{id}.ics`: iCalendar format with TZID, recurring weekly routine slots formatted with RRULE between `TERM_START` and `TERM_END`, one-off exam events, stable UIDs.
