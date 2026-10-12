@@ -3,11 +3,13 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, col, select
 
+from app.audit import log_audit
 from app.auth import require_admin
 from app.database import get_session
 from app.models.batch import Batch, Section
 from app.models.exam import Exam
 from app.models.routine import RoutineSlot
+from app.models.user import User
 from app.security import get_csrf_token, verify_csrf
 
 router = APIRouter(prefix="/admin", tags=["Admin Batches"])
@@ -43,6 +45,7 @@ def create_batch(
     request: Request,
     name: str = Form(...),
     session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     clean_name = name.strip()
     if not clean_name:
@@ -63,6 +66,17 @@ def create_batch(
     batch = Batch(name=clean_name)
     session.add(batch)
     session.commit()
+    session.refresh(batch)
+
+    log_audit(
+        session=session,
+        actor=current_user.email,
+        action="CREATE",
+        entity="Batch",
+        entity_id=batch.id,
+        summary=f"Created batch: '{batch.name}'",
+    )
+    session.commit()
     return RedirectResponse(url="/admin/batches", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -76,6 +90,7 @@ def create_section(
     batch_id: int,
     name: str = Form(...),
     session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     clean_name = name.strip().upper()
     batch = session.get(Batch, batch_id)
@@ -96,6 +111,17 @@ def create_section(
     section = Section(batch_id=batch_id, name=clean_name)
     session.add(section)
     session.commit()
+    session.refresh(section)
+
+    log_audit(
+        session=session,
+        actor=current_user.email,
+        action="CREATE",
+        entity="Section",
+        entity_id=section.id,
+        summary=f"Created section '{section.name}' in batch '{batch.name}'",
+    )
+    session.commit()
     return RedirectResponse(url="/admin/batches", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -106,6 +132,7 @@ def create_section(
 def delete_batch(
     batch_id: int,
     session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     batch = session.get(Batch, batch_id)
     if not batch:
@@ -133,7 +160,18 @@ def delete_batch(
             status_code=status.HTTP_303_SEE_OTHER,
         )
 
+    batch_name = batch.name
     session.delete(batch)
+    session.commit()
+
+    log_audit(
+        session=session,
+        actor=current_user.email,
+        action="DELETE",
+        entity="Batch",
+        entity_id=batch_id,
+        summary=f"Deleted batch: '{batch_name}'",
+    )
     session.commit()
     return RedirectResponse(url="/admin/batches", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -145,6 +183,7 @@ def delete_batch(
 def delete_section(
     section_id: int,
     session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     section = session.get(Section, section_id)
     if section:
@@ -163,7 +202,18 @@ def delete_section(
                 url=f"/admin/batches?error={err}",
                 status_code=status.HTTP_303_SEE_OTHER,
             )
+        sec_name = section.name
         session.delete(section)
+        session.commit()
+
+        log_audit(
+            session=session,
+            actor=current_user.email,
+            action="DELETE",
+            entity="Section",
+            entity_id=section_id,
+            summary=f"Deleted section: '{sec_name}'",
+        )
         session.commit()
 
     return RedirectResponse(url="/admin/batches", status_code=status.HTTP_303_SEE_OTHER)

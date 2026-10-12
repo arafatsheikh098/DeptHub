@@ -17,7 +17,7 @@
         <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
             <div style="flex: 1; min-width: 200px;">
                 <label for="batch_id" style="font-size: 0.85rem; font-weight: 600;">Batch</label>
-                <select id="batch_id" name="batch_id" onchange="this.form.submit()">
+                <select id="batch_id" name="batch_id" data-auto-submit="true">
                     {% for b in batches %}
                         <option value="{{ b.id }}" {% if selected_batch_id == b.id %}selected{% endif %}>{{ b.name }}</option>
                     {% endfor %}
@@ -27,7 +27,7 @@
             {% if sections %}
                 <div style="flex: 1; min-width: 160px;">
                     <label for="section_id" style="font-size: 0.85rem; font-weight: 600;">Section</label>
-                    <select id="section_id" name="section_id" onchange="this.form.submit()">
+                    <select id="section_id" name="section_id" data-auto-submit="true">
                         <option value="">All Sections</option>
                         {% for s in sections %}
                             <option value="{{ s.id }}" {% if selected_section_id == s.id %}selected{% endif %}>Section {{ s.name }}</option>

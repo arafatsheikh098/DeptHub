@@ -5,10 +5,12 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, col, select
 
+from app.audit import log_audit
 from app.auth import require_admin
 from app.database import get_session
 from app.models.batch import Batch
 from app.models.exam import Exam, ExamType
+from app.models.user import User
 from app.security import get_csrf_token, verify_csrf
 from app.utils import (
     format_date,
@@ -27,16 +29,17 @@ templates.env.globals["format_time"] = format_time
 @router.get("/exams", response_class=HTMLResponse)
 def list_public_exams(
     request: Request,
-    batch_id: int | None = None,
+    batch_id: str | None = None,
     show_past: bool = False,
     session: Session = Depends(get_session),
 ):
+    parsed_batch_id = int(batch_id) if batch_id and batch_id.strip().isdigit() else None
     local_today, _ = get_current_local_date_and_weekday()
     batches = session.exec(select(Batch).order_by(col(Batch.name).asc())).all()
 
     statement = select(Exam)
-    if batch_id:
-        statement = statement.where(Exam.batch_id == batch_id)
+    if parsed_batch_id:
+        statement = statement.where(Exam.batch_id == parsed_batch_id)
 
     # Filter past exams unless show_past is True
     if not show_past:
@@ -58,7 +61,7 @@ def list_public_exams(
             "csrf_token": csrf_token,
             "exams": exams,
             "batches": batches,
-            "selected_batch_id": batch_id,
+            "selected_batch_id": parsed_batch_id,
             "show_past": show_past,
             "local_today": local_today,
             "is_admin": is_admin,
@@ -72,12 +75,13 @@ def list_public_exams(
 @router.get("/admin/exams", response_class=HTMLResponse)
 def admin_list_exams(
     request: Request,
-    batch_id: int | None = None,
+    batch_id: str | None = None,
     session: Session = Depends(get_session),
     _user=Depends(require_admin),
 ):
+    parsed_batch_id = int(batch_id) if batch_id and batch_id.strip().isdigit() else None
     batches = session.exec(select(Batch).order_by(col(Batch.name).asc())).all()
-    selected_batch = batch_id or (batches[0].id if batches else None)
+    selected_batch = parsed_batch_id or (batches[0].id if batches else None)
 
     statement = select(Exam)
     if selected_batch:
@@ -101,12 +105,13 @@ def admin_list_exams(
 @router.get("/admin/exams/new", response_class=HTMLResponse)
 def admin_new_exam_page(
     request: Request,
-    batch_id: int | None = None,
+    batch_id: str | None = None,
     session: Session = Depends(get_session),
     _user=Depends(require_admin),
 ):
+    parsed_batch_id = int(batch_id) if batch_id and batch_id.strip().isdigit() else None
     batches = session.exec(select(Batch).order_by(col(Batch.name).asc())).all()
-    selected_batch = batch_id or (batches[0].id if batches else None)
+    selected_batch = parsed_batch_id or (batches[0].id if batches else None)
 
     return templates.TemplateResponse(
         request=request,
@@ -137,6 +142,7 @@ def admin_create_exam(
     room: str = Form(...),
     note: str | None = Form(None),
     session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     try:
         y, m, d = map(int, exam_date_str.split("-"))
@@ -158,6 +164,17 @@ def admin_create_exam(
         note=note.strip() if note and note.strip() else None,
     )
     session.add(exam)
+    session.commit()
+    session.refresh(exam)
+
+    log_audit(
+        session=session,
+        actor=current_user.email,
+        action="CREATE",
+        entity="Exam",
+        entity_id=exam.id,
+        summary=f"Created exam: [{exam.type}] {exam.course} on {exam.date}",
+    )
     session.commit()
 
     return RedirectResponse(
@@ -208,6 +225,7 @@ def admin_update_exam(
     room: str = Form(...),
     note: str | None = Form(None),
     session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     exam = session.get(Exam, exam_id)
     if not exam:
@@ -234,6 +252,16 @@ def admin_update_exam(
     session.add(exam)
     session.commit()
 
+    log_audit(
+        session=session,
+        actor=current_user.email,
+        action="UPDATE",
+        entity="Exam",
+        entity_id=exam.id,
+        summary=f"Updated exam: [{exam.type}] {exam.course} on {exam.date}",
+    )
+    session.commit()
+
     return RedirectResponse(
         url=f"/admin/exams?batch_id={batch_id}",
         status_code=status.HTTP_303_SEE_OTHER,
@@ -247,11 +275,24 @@ def admin_update_exam(
 def admin_delete_exam(
     exam_id: int,
     session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     exam = session.get(Exam, exam_id)
     batch_id = exam.batch_id if exam else None
     if exam:
+        course_name = exam.course
+        exam_type = exam.type
         session.delete(exam)
+        session.commit()
+
+        log_audit(
+            session=session,
+            actor=current_user.email,
+            action="DELETE",
+            entity="Exam",
+            entity_id=exam_id,
+            summary=f"Deleted exam: [{exam_type}] {course_name}",
+        )
         session.commit()
 
     redirect_url = f"/admin/exams?batch_id={batch_id}" if batch_id else "/admin/exams"

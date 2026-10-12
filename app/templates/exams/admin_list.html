@@ -16,7 +16,7 @@
     <form method="get" action="/admin/exams" style="margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: flex-end; max-width: 400px;">
         <div style="flex: 1;">
             <label for="batch_id" style="font-size: 0.85rem; font-weight: 600;">Filter by Batch</label>
-            <select id="batch_id" name="batch_id" onchange="this.form.submit()">
+            <select id="batch_id" name="batch_id" data-auto-submit="true">
                 {% for b in batches %}
                     <option value="{{ b.id }}" {% if selected_batch_id == b.id %}selected{% endif %}>{{ b.name }}</option>
                 {% endfor %}

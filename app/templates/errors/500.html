@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Internal Server Error - DeptHub{% endblock %}
+
+{% block content %}
+<article style="text-align: center; padding: 3rem 1rem;">
+    <h1 style="font-size: 3rem; margin-bottom: 0.5rem; color: #e02424;">500</h1>
+    <h2>Internal Server Error</h2>
+    <p style="color: var(--pico-muted-color); margin-bottom: 2rem;">Something unexpected happened on our server. The error has been logged for investigation.</p>
+    <a href="/" role="button" class="contrast" id="btn-back-home-500">Back to Notice Board</a>
+</article>
+{% endblock %}

@@ -6,10 +6,12 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, col, select
 
+from app.audit import log_audit
 from app.auth import require_admin
 from app.database import get_session
 from app.models.batch import Batch
 from app.models.notice import Notice, NoticeCategory, NoticeStatus
+from app.models.user import User
 from app.security import get_csrf_token, verify_csrf
 from app.utils import format_dt, is_safe_external_url
 
@@ -25,10 +27,12 @@ def list_public_notices(
     request: Request,
     q: str | None = None,
     category: str | None = None,
-    batch_id: int | None = None,
+    batch_id: str | None = None,
     page: int = Query(default=1, ge=1),
     session: Session = Depends(get_session),
 ):
+    parsed_batch_id = int(batch_id) if batch_id and batch_id.strip().isdigit() else None
+
     # Base query: only published notices for public view
     statement = select(Notice).where(Notice.status == NoticeStatus.PUBLISHED)
 
@@ -44,9 +48,9 @@ def list_public_notices(
         statement = statement.where(Notice.category == category.strip())
 
     # 3. Batch filter: target batch or empty batch (for all batches)
-    if batch_id:
+    if parsed_batch_id:
         statement = statement.where(
-            (Notice.batch_id == batch_id) | (Notice.batch_id == None)  # noqa: E711
+            (Notice.batch_id == parsed_batch_id) | (Notice.batch_id == None)  # noqa: E711
         )
 
     # Ordering: Pinned first, then newest published_at, then newest id
@@ -67,8 +71,8 @@ def list_public_notices(
             query_params.append(f"q={q}")
         if category:
             query_params.append(f"category={category}")
-        if batch_id:
-            query_params.append(f"batch_id={batch_id}")
+        if parsed_batch_id:
+            query_params.append(f"batch_id={parsed_batch_id}")
         query_params.append(f"page={total_pages}")
         return RedirectResponse(
             url=f"/?{'&'.join(query_params)}",
@@ -93,7 +97,7 @@ def list_public_notices(
         "total_pages": total_pages,
         "query": q or "",
         "selected_category": category or "",
-        "selected_batch": batch_id,
+        "selected_batch": parsed_batch_id,
         "categories": NoticeCategory.ALL,
         "batches": batches,
         "is_admin": is_admin,
@@ -206,6 +210,7 @@ def admin_create_notice(
     status_choice: str = Form("published", alias="status"),
     is_pinned: bool = Form(False),
     session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     clean_title = title.strip()
     clean_link = (
@@ -270,6 +275,16 @@ def admin_create_notice(
     session.commit()
     session.refresh(notice)
 
+    log_audit(
+        session=session,
+        actor=current_user.email,
+        action="CREATE",
+        entity="Notice",
+        entity_id=notice.id,
+        summary=f"Created notice: '{notice.title}' ({notice.category})",
+    )
+    session.commit()
+
     return RedirectResponse(url="/admin/notices", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -314,6 +329,7 @@ def admin_update_notice(
     status_choice: str = Form("published", alias="status"),
     is_pinned: bool = Form(False),
     session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     notice = session.get(Notice, notice_id)
     if not notice:
@@ -373,6 +389,16 @@ def admin_update_notice(
     session.add(notice)
     session.commit()
 
+    log_audit(
+        session=session,
+        actor=current_user.email,
+        action="UPDATE",
+        entity="Notice",
+        entity_id=notice.id,
+        summary=f"Updated notice: '{notice.title}' ({notice.category})",
+    )
+    session.commit()
+
     return RedirectResponse(url="/admin/notices", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -383,10 +409,21 @@ def admin_update_notice(
 def admin_delete_notice(
     notice_id: int,
     session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     notice = session.get(Notice, notice_id)
     if notice:
+        notice_title = notice.title
         session.delete(notice)
+        session.commit()
+        log_audit(
+            session=session,
+            actor=current_user.email,
+            action="DELETE",
+            entity="Notice",
+            entity_id=notice_id,
+            summary=f"Deleted notice: '{notice_title}'",
+        )
         session.commit()
 
     return RedirectResponse(url="/admin/notices", status_code=status.HTTP_303_SEE_OTHER)

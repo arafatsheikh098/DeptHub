@@ -5,10 +5,12 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, col, select
 
+from app.audit import log_audit
 from app.auth import require_admin
 from app.database import get_session
 from app.models.batch import Batch, Section
 from app.models.routine import RoutineSlot
+from app.models.user import User
 from app.routine_validation import validate_routine_slot
 from app.security import get_csrf_token, verify_csrf
 from app.utils import (
@@ -27,14 +29,20 @@ templates.env.globals["format_time"] = format_time
 @router.get("/routine", response_class=HTMLResponse)
 def get_weekly_routine(
     request: Request,
-    batch_id: int | None = None,
-    section_id: int | None = None,
+    batch_id: str | None = None,
+    section_id: str | None = None,
     session: Session = Depends(get_session),
 ):
+    parsed_batch_id = int(batch_id) if batch_id and batch_id.strip().isdigit() else None
+    parsed_section_id = (
+        int(section_id) if section_id and section_id.strip().isdigit() else None
+    )
     batches = session.exec(select(Batch).order_by(col(Batch.name).asc())).all()
 
     # Default to first batch if none chosen
-    selected_batch_id = batch_id if batch_id else (batches[0].id if batches else None)
+    selected_batch_id = (
+        parsed_batch_id if parsed_batch_id else (batches[0].id if batches else None)
+    )
     selected_batch = (
         session.get(Batch, selected_batch_id) if selected_batch_id else None
     )
@@ -52,9 +60,9 @@ def get_weekly_routine(
     grid_data = {day: [] for day in WEEKDAYS}
     if selected_batch_id:
         statement = select(RoutineSlot).where(RoutineSlot.batch_id == selected_batch_id)
-        if section_id:
+        if parsed_section_id:
             statement = statement.where(
-                (RoutineSlot.section_id == section_id)
+                (RoutineSlot.section_id == parsed_section_id)
                 | (RoutineSlot.section_id == None)  # noqa: E711
             )
         statement = statement.order_by(col(RoutineSlot.start_time).asc())
@@ -76,7 +84,7 @@ def get_weekly_routine(
             "selected_batch": selected_batch,
             "selected_batch_id": selected_batch_id,
             "sections": sections,
-            "selected_section_id": section_id,
+            "selected_section_id": parsed_section_id,
             "grid_data": grid_data,
             "weekdays": WEEKDAYS,
             "is_admin": is_admin,
@@ -87,15 +95,21 @@ def get_weekly_routine(
 @router.get("/today", response_class=HTMLResponse)
 def get_today_routine(
     request: Request,
-    batch_id: int | None = None,
-    section_id: int | None = None,
+    batch_id: str | None = None,
+    section_id: str | None = None,
     session: Session = Depends(get_session),
 ):
+    parsed_batch_id = int(batch_id) if batch_id and batch_id.strip().isdigit() else None
+    parsed_section_id = (
+        int(section_id) if section_id and section_id.strip().isdigit() else None
+    )
     # Compute local date and weekday in TIMEZONE
     local_date, local_weekday = get_current_local_date_and_weekday()
 
     batches = session.exec(select(Batch).order_by(col(Batch.name).asc())).all()
-    selected_batch_id = batch_id if batch_id else (batches[0].id if batches else None)
+    selected_batch_id = (
+        parsed_batch_id if parsed_batch_id else (batches[0].id if batches else None)
+    )
     selected_batch = (
         session.get(Batch, selected_batch_id) if selected_batch_id else None
     )
@@ -115,9 +129,9 @@ def get_today_routine(
             .where(RoutineSlot.batch_id == selected_batch_id)
             .where(RoutineSlot.weekday == local_weekday)
         )
-        if section_id:
+        if parsed_section_id:
             statement = statement.where(
-                (RoutineSlot.section_id == section_id)
+                (RoutineSlot.section_id == parsed_section_id)
                 | (RoutineSlot.section_id == None)  # noqa: E711
             )
         statement = statement.order_by(col(RoutineSlot.start_time).asc())
@@ -135,7 +149,7 @@ def get_today_routine(
             "selected_batch": selected_batch,
             "selected_batch_id": selected_batch_id,
             "sections": sections,
-            "selected_section_id": section_id,
+            "selected_section_id": parsed_section_id,
             "local_date": local_date,
             "local_weekday": local_weekday,
             "slots": slots,
@@ -150,12 +164,15 @@ def get_today_routine(
 @router.get("/admin/routine", response_class=HTMLResponse)
 def admin_list_routine(
     request: Request,
-    batch_id: int | None = None,
+    batch_id: str | None = None,
     session: Session = Depends(get_session),
     _user=Depends(require_admin),
 ):
+    parsed_batch_id = int(batch_id) if batch_id and batch_id.strip().isdigit() else None
     batches = session.exec(select(Batch).order_by(col(Batch.name).asc())).all()
-    selected_batch_id = batch_id if batch_id else (batches[0].id if batches else None)
+    selected_batch_id = (
+        parsed_batch_id if parsed_batch_id else (batches[0].id if batches else None)
+    )
 
     statement = select(RoutineSlot)
     if selected_batch_id:
@@ -182,12 +199,13 @@ def admin_list_routine(
 @router.get("/admin/routine/new", response_class=HTMLResponse)
 def admin_new_slot_page(
     request: Request,
-    batch_id: int | None = None,
+    batch_id: str | None = None,
     session: Session = Depends(get_session),
     _user=Depends(require_admin),
 ):
+    parsed_batch_id = int(batch_id) if batch_id and batch_id.strip().isdigit() else None
     batches = session.exec(select(Batch).order_by(col(Batch.name).asc())).all()
-    selected_batch = batch_id or (batches[0].id if batches else None)
+    selected_batch = parsed_batch_id or (batches[0].id if batches else None)
     sections = (
         session.exec(
             select(Section)
@@ -230,6 +248,7 @@ def admin_create_slot(
     teacher: str = Form(...),
     room: str = Form(...),
     session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     try:
         sh, sm = map(int, start_time_str.split(":"))
@@ -302,6 +321,18 @@ def admin_create_slot(
     )
     session.add(slot)
     session.commit()
+    session.refresh(slot)
+
+    t_str = f"{slot.start_time.strftime('%H:%M')}-{slot.end_time.strftime('%H:%M')}"
+    log_audit(
+        session=session,
+        actor=current_user.email,
+        action="CREATE",
+        entity="RoutineSlot",
+        entity_id=slot.id,
+        summary=f"Created routine slot: {slot.course_code} ({slot.weekday} {t_str})",
+    )
+    session.commit()
 
     return RedirectResponse(
         url=f"/admin/routine?batch_id={batch_id}",
@@ -360,6 +391,7 @@ def admin_update_slot(
     teacher: str = Form(...),
     room: str = Form(...),
     session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     slot = session.get(RoutineSlot, slot_id)
     if not slot:
@@ -426,6 +458,16 @@ def admin_update_slot(
     session.add(slot)
     session.commit()
 
+    log_audit(
+        session=session,
+        actor=current_user.email,
+        action="UPDATE",
+        entity="RoutineSlot",
+        entity_id=slot.id,
+        summary=f"Updated routine slot: {slot.course_code} ({slot.weekday})",
+    )
+    session.commit()
+
     return RedirectResponse(
         url=f"/admin/routine?batch_id={batch_id}",
         status_code=status.HTTP_303_SEE_OTHER,
@@ -439,11 +481,24 @@ def admin_update_slot(
 def admin_delete_slot(
     slot_id: int,
     session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     slot = session.get(RoutineSlot, slot_id)
     batch_id = slot.batch_id if slot else None
     if slot:
+        slot_code = slot.course_code
+        slot_day = slot.weekday
         session.delete(slot)
+        session.commit()
+
+        log_audit(
+            session=session,
+            actor=current_user.email,
+            action="DELETE",
+            entity="RoutineSlot",
+            entity_id=slot_id,
+            summary=f"Deleted routine slot: {slot_code} ({slot_day})",
+        )
         session.commit()
 
     redirect_url = (

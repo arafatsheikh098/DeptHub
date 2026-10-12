@@ -6,6 +6,7 @@
     <title>{% block title %}DeptHub - Department Notice Board & Routine{% endblock %}</title>
     <meta name="description" content="{% block description %}Notices, class routine, and exam schedule for the university department.{% endblock %}">
     <link rel="stylesheet" href="/static/css/pico.min.css">
+    <link rel="stylesheet" href="/static/css/app.css">
     <style>
         /* Mobile-friendly and custom enhancements */
         :root {
@@ -85,6 +86,7 @@
             -webkit-overflow-scrolling: touch;
         }
     </style>
+    <meta name="htmx-config" content='{"allowEval": false, "selfRequestsOnly": true}'>
     <link rel="alternate" type="application/atom+xml" title="DeptHub Notices Atom Feed" href="/feeds/notices.atom">
     {% block head %}{% endblock %}
 </head>
@@ -123,6 +125,8 @@
         <p>&copy; 2026 DeptHub &bull; University Department Information System &bull; <a href="/feeds/notices.atom" class="secondary" title="Subscribe via Atom Feed">📡 Atom Feed</a></p>
     </footer>
 
+    <script src="/static/js/htmx.min.js" defer></script>
+    <script src="/static/js/app.js" defer></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

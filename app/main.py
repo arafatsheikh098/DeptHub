@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, status
+from fastapi import Depends, FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -12,12 +12,16 @@ from app.auth import get_password_hash
 from app.config import settings
 from app.database import engine, get_session, init_db
 from app.models.user import User
+from app.routes.audit import router as audit_router
 from app.routes.auth import router as auth_router
 from app.routes.batches import router as batches_router
 from app.routes.exams import router as exams_router
 from app.routes.feeds import router as feeds_router
 from app.routes.notices import router as notices_router
 from app.routes.routine import router as routine_router
+from app.security import SecurityHeadersMiddleware
+
+templates = Jinja2Templates(directory="app/templates")
 
 
 @asynccontextmanager
@@ -59,6 +63,9 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Security Headers Middleware
+    app.add_middleware(SecurityHeadersMiddleware)
+
     # Session Middleware with secure signed cookie
     app.add_middleware(
         SessionMiddleware,
@@ -79,6 +86,7 @@ def create_app() -> FastAPI:
     app.include_router(routine_router)
     app.include_router(exams_router)
     app.include_router(feeds_router)
+    app.include_router(audit_router)
 
     @app.get("/health", tags=["Operations"])
     def health_check(session: Session = Depends(get_session)):
@@ -93,8 +101,34 @@ def create_app() -> FastAPI:
                 content={"status": "unhealthy", "detail": str(exc)},
             )
 
+    @app.exception_handler(404)
+    async def not_found_handler(request: Request, exc: Exception):
+        accept = request.headers.get("accept", "")
+        if "text/html" in accept:
+            return templates.TemplateResponse(
+                request=request,
+                name="errors/404.html",
+                context={"is_admin": False},
+                status_code=404,
+            )
+        detail = getattr(exc, "detail", "Not Found")
+        return JSONResponse(status_code=404, content={"detail": detail})
+
+    @app.exception_handler(500)
+    async def server_error_handler(request: Request, exc: Exception):
+        accept = request.headers.get("accept", "")
+        if "text/html" in accept:
+            return templates.TemplateResponse(
+                request=request,
+                name="errors/500.html",
+                context={"is_admin": False},
+                status_code=500,
+            )
+        return JSONResponse(
+            status_code=500, content={"detail": "Internal Server Error"}
+        )
+
     return app
 
 
 app = create_app()
-templates = Jinja2Templates(directory="app/templates")
