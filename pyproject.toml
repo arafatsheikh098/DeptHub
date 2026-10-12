@@ -10,7 +10,8 @@ exclude = [
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 ignore = [
-    "B008",  # Do not perform function call `Depends` in argument defaults (standard FastAPI pattern)
+    "B008",   # Do not perform function call `Depends` in argument defaults (standard FastAPI pattern)
+    "UP045",  # Use `X | None` (SQLModel requires Optional['Model'] for string forward-refs)
 ]
 
 [tool.pytest.ini_options]

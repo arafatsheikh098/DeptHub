@@ -5,27 +5,40 @@ from fastapi import Depends, FastAPI, status
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlmodel import Session, text
+from sqlmodel import Session, select, text
+from starlette.middleware.sessions import SessionMiddleware
 
+from app.auth import get_password_hash
 from app.config import settings
 from app.database import engine, get_session, init_db
+from app.models.user import User
+from app.routes.auth import router as auth_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    # Production secret validation
+    if settings.ENV == "production" and (
+        not settings.SECRET_KEY
+        or settings.SECRET_KEY == "insecure-dev-secret-key-change-in-production"
+        or "insecure" in settings.SECRET_KEY
+    ):
+        msg = "Production refuses to start with default or insecure SECRET_KEY"
+        raise ValueError(msg)
+
     # Startup: ensure tables exist in dev/test, or check db
     init_db()
 
     # Optional initial admin user seeding
     if settings.ADMIN_EMAIL and settings.ADMIN_PASSWORD:
-        from app.auth import get_password_hash
-        from app.models.user import User
-
         with Session(engine) as session:
-            existing = session.query(User).first()
+            clean_email = settings.ADMIN_EMAIL.lower().strip()
+            existing = session.exec(
+                select(User).where(User.email == clean_email)
+            ).first()
             if not existing:
                 admin_user = User(
-                    email=settings.ADMIN_EMAIL,
+                    email=clean_email,
                     password_hash=get_password_hash(settings.ADMIN_PASSWORD),
                 )
                 session.add(admin_user)
@@ -41,8 +54,21 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Session Middleware with secure signed cookie
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=settings.SECRET_KEY,
+        session_cookie="depthub_session",
+        max_age=14 * 86400,
+        same_site="lax",
+        https_only=(settings.ENV == "production"),
+    )
+
     # Mount static files
     app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+    # Include routes
+    app.include_router(auth_router)
 
     @app.get("/health", tags=["Operations"])
     def health_check(session: Session = Depends(get_session)):
