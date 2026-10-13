@@ -1,3 +1,4 @@
+import os
 import socket
 import threading
 import time
@@ -11,6 +12,21 @@ from sqlmodel import Session
 from app.database import engine, init_db
 from app.main import create_app
 from app.seed import seed_database
+
+
+def _has_browser() -> bool:
+    try:
+        with sync_playwright() as p:
+            exe = p.chromium.executable_path
+            return bool(exe and os.path.exists(exe))
+    except Exception:
+        return False
+
+
+pytestmark = pytest.mark.skipif(
+    not _has_browser(),
+    reason="Playwright chromium not installed (run 'playwright install chromium')",
+)
 
 
 def get_free_port() -> int:
