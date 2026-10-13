@@ -28,9 +28,9 @@ docker compose exec app python -m app.seed
 | :---: | :---: |
 | ![Today Schedule](docs/screenshot_today.png) | ![Exam Schedule](docs/screenshot_exams.png) |
 
-| Mobile Viewport (375px iPhone SE) |
-| :---: |
-| ![Mobile Viewport](docs/screenshot_mobile.png) |
+| Mobile Viewport (375px iPhone SE) | Dark Theme (One-Click Toggle) |
+| :---: | :---: |
+| ![Mobile Viewport](docs/screenshot_mobile.png) | ![Dark Theme](docs/screenshot_dark.png) |
 
 ---
 
