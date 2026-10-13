@@ -130,7 +130,7 @@ flowchart TD
 ### 2. Setup Virtual Environment
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/depthub.git
+git clone https://github.com/arafatsheikh098/DeptHub.git
 cd depthub
 
 # Create and activate virtual environment

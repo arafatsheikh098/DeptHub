@@ -28,3 +28,12 @@ playwright-report/
 # OS
 .DS_Store
 Thumbs.db
+
+# Internal AI planning docs
+CLAUDE.md
+depthub-prompting-plan.md
+PLAN.md
+SCOPE.md
+DECISIONS.md
+BLOCKERS.md
+FINAL_REPORT.md
