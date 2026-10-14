@@ -19,11 +19,21 @@ def get_client_ip(request: Request) -> str:
     return request.client.host if request.client else "127.0.0.1"
 
 
+def is_safe_next(next_url: str | None) -> bool:
+    """Return True if next_url is a same-site relative path.
+
+    Rejects absolute URLs and protocol-relative ("//host") targets, either of
+    which would turn the next= parameter into an open redirect.
+    """
+    return bool(next_url) and next_url.startswith("/") and not next_url.startswith("//")
+
+
 @router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request, next: str | None = None):
     # If already logged in, redirect
     if request.session.get("user_id"):
-        return RedirectResponse(url=next or "/", status_code=status.HTTP_303_SEE_OTHER)
+        redirect_url = next if is_safe_next(next) else "/"
+        return RedirectResponse(url=redirect_url, status_code=status.HTTP_303_SEE_OTHER)
 
     csrf_token = get_csrf_token(request)
     return templates.TemplateResponse(
@@ -88,8 +98,7 @@ def login_submit(
     request.session["user_id"] = user.id
     request.session["user_email"] = user.email
 
-    is_safe_next = next and next.startswith("/") and not next.startswith("//")
-    redirect_url = next if is_safe_next else "/"
+    redirect_url = next if is_safe_next(next) else "/"
     return RedirectResponse(url=redirect_url, status_code=status.HTTP_303_SEE_OTHER)
 
 

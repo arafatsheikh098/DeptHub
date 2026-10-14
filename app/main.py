@@ -99,10 +99,12 @@ def create_app() -> FastAPI:
             return JSONResponse(
                 status_code=status.HTTP_200_OK, content={"status": "ok"}
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
+            # Detail is deliberately omitted: /health is unauthenticated and
+            # database errors can carry connection strings and credentials.
             return JSONResponse(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                content={"status": "unhealthy", "detail": str(exc)},
+                content={"status": "unhealthy"},
             )
 
     @app.exception_handler(404)

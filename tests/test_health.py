@@ -25,5 +25,9 @@ def test_health_check_failure():
             response = client.get("/health")
             assert response.status_code == 503
             assert response.json()["status"] == "unhealthy"
+            # /health is unauthenticated: the underlying error must not leak,
+            # since database errors can carry connection strings.
+            assert "detail" not in response.json()
+            assert "Database connection failure" not in response.text
     finally:
         app.dependency_overrides.clear()

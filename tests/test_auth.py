@@ -148,3 +148,77 @@ def test_cli_create_admin(session: Session):
     ).first()
     assert user is not None
     assert user.email == "cliadmin@example.com"
+
+
+def test_login_next_param_rejects_offsite_redirect(
+    client: TestClient, session: Session
+):
+    user = User(
+        email="redirect@example.com",
+        password_hash=get_password_hash("SecurePassword123!"),
+    )
+    session.add(user)
+    session.commit()
+
+    resp_get = client.get("/auth/login")
+    import re
+
+    csrf_token = re.search(r'name="csrf_token" value="([^"]+)"', resp_get.text).group(1)
+
+    resp_login = client.post(
+        "/auth/login",
+        data={
+            "email": "redirect@example.com",
+            "password": "SecurePassword123!",
+            "csrf_token": csrf_token,
+        },
+        follow_redirects=False,
+    )
+    assert resp_login.status_code == 303
+
+    # Already authenticated: an off-site next= must fall back to "/" rather than
+    # bouncing the admin to an attacker-controlled host.
+    for hostile in ("https://evil.example.com/", "//evil.example.com/"):
+        resp = client.get(
+            "/auth/login", params={"next": hostile}, follow_redirects=False
+        )
+        assert resp.status_code == 303
+        assert resp.headers["location"] == "/"
+
+    # A same-site path is still honoured.
+    resp_safe = client.get(
+        "/auth/login", params={"next": "/admin/notices"}, follow_redirects=False
+    )
+    assert resp_safe.status_code == 303
+    assert resp_safe.headers["location"] == "/admin/notices"
+
+
+def test_login_rate_limit_not_bypassable_by_changing_ip(client: TestClient):
+    with freeze_time("2026-10-14 12:00:00"):
+        resp_get = client.get("/auth/login")
+        import re
+
+        csrf_token = re.search(
+            r'name="csrf_token" value="([^"]+)"', resp_get.text
+        ).group(1)
+
+        email = "target@example.com"
+        statuses = []
+        # A fresh spoofed IP per attempt resets the per-(IP, email) counter, so
+        # only the email-wide cap can stop sustained guessing on one account.
+        for i in range(12):
+            resp = client.post(
+                "/auth/login",
+                data={
+                    "email": email,
+                    "password": f"wrong_{i}",
+                    "csrf_token": csrf_token,
+                },
+                headers={"X-Forwarded-For": f"203.0.113.{i + 1}"},
+            )
+            statuses.append(resp.status_code)
+
+        assert statuses[:10] == [400] * 10, statuses
+        assert statuses[10] == 429, (
+            f"rotating X-Forwarded-For bypassed lockout: {statuses}"
+        )
