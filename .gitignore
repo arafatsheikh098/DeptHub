@@ -37,3 +37,12 @@ SCOPE.md
 DECISIONS.md
 BLOCKERS.md
 FINAL_REPORT.md
+
+# Security, secrets & audit exclusions
+need_fix.md
+AUDIT_REPORT.md
+PROJECT_SPEC.md
+*.db-shm
+*.db-wal
+.env.*
+!.env.example

@@ -300,7 +300,7 @@ depthub/
 
 ## Roadmap
 
-Taken from [`BACKLOG.md`](BACKLOG.md):
+Upcoming features:
 - **B001**: Official PDF and image circular attachments.
 - **B002**: Daily email notification digest for students.
 - **B003**: Explicit Light / Dark theme toggle button.
